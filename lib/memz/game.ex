@@ -7,12 +7,12 @@ defmodule Memz.Game do
   alias Ecto.Changeset
   alias Memz.Game.Eraser
 
-  @spec new_eraser(binary(), integer()) :: Memz.Game.t()
-  def new_eraser(text, steps) do
+  @spec new_game(binary(), integer()) :: Memz.Game.t()
+  def new_game(text, steps) do
     %__MODULE__{text: text, steps: steps}
   end
 
-  @spec create(%Ecto.Changeset{}) :: any
+  @spec create(%Ecto.Changeset{}) :: Memz.Game.Eraser.t() | any
   def create(%{valid?: true} = changeset) do
     Eraser.new(changeset.changes.text, changeset.changes.steps)
   end
