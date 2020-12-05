@@ -24,6 +24,10 @@ defmodule Memz.Game.Eraser do
     %__MODULE__{schedule: tail, text: erased_text}
   end
 
+  @spec done?(any) :: boolean
+  def done?(%{steps: []}), do: true
+  def done?(_eraser), do: false
+
   defp maybe_erase(char, _erase) when char in @delete_proof, do: char
   defp maybe_erase(_char, _erase = true), do: "_"
   defp maybe_erase(char, _erase = false), do: char
