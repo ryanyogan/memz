@@ -28,9 +28,8 @@ defmodule Memz.Game do
     |> Map.put(:action, :validate)
   end
 
-  @spec erase(%{schedule: nonempty_maybe_improper_list, text: binary}) :: Memz.Game.Eraser.t()
-  def erase(eraser) do
-    Eraser.erase(eraser)
+  def erase(eraser, guess \\ "") do
+    Eraser.erase(eraser, guess)
   end
 
   @spec done?(any) :: boolean
