@@ -18,7 +18,7 @@ defmodule MemzWeb.Router do
     pipe_through :browser
 
     live "/", PageLive, :index
-    live "/game/welcome", GameLive.Welcome, :index
+    live "/game/play", GameLive.Play, :play
   end
 
   if Mix.env() in [:dev, :test] do
