@@ -1,10 +1,11 @@
 defmodule Memz.Game.Eraser do
-  defstruct ~w(text schedule score initial_text)a
+  defstruct ~w(text schedule score initial_text status)a
 
   @type t :: %__MODULE__{
           text: binary(),
           schedule: list(),
-          score: integer()
+          score: integer(),
+          status: atom()
         }
 
   @delete_proof ["\n", ",", "."]
@@ -15,13 +16,12 @@ defmodule Memz.Game.Eraser do
       text: text,
       schedule: schedule(text, number_of_steps),
       score: 0,
-      initial_text: text
+      initial_text: text,
+      status: :erasing
     }
   end
 
-  @spec erase(%{schedule: nonempty_maybe_improper_list, text: binary}, binary) ::
-          Memz.Game.Eraser.t()
-  def erase(%{schedule: [to_erase | tail], text: text} = eraser, guess) do
+  def erase(%{schedule: [to_erase | tail], text: text} = eraser) do
     erased_text =
       text
       |> String.graphemes()
@@ -29,8 +29,20 @@ defmodule Memz.Game.Eraser do
       |> Enum.map(fn {char, index} -> maybe_erase(char, index in to_erase) end)
       |> Enum.join("")
 
-    %{eraser | schedule: tail, text: erased_text}
-    |> compute_score(eraser.text, guess)
+    %{eraser | schedule: tail, text: erased_text, status: :guessing}
+  end
+
+  def score(eraser, guess) do
+    compute_score(eraser, eraser.initial_text, guess)
+    |> set_next_status()
+  end
+
+  defp set_next_status(%{schedule: []} = eraser) do
+    %{eraser | status: :finished}
+  end
+
+  defp set_next_status(eraser) do
+    %{eraser | status: :erasing}
   end
 
   @spec done?(any) :: boolean

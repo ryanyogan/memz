@@ -11,6 +11,7 @@ defmodule MemzWeb.GameLive.Play do
     {:ok,
      socket
      |> assign(changeset: Game.change_game(default_game(), %{}))
+     |> assign(guess_changeset: Game.game_changeset())
      |> assign(eraser: nil)
      |> assign(submitted: false)}
   end
@@ -19,10 +20,6 @@ defmodule MemzWeb.GameLive.Play do
   def render(%{eraser: nil} = assigns) do
     ~L"""
     <h1>What do you want to memorize?</h1>
-    <pre>
-      <%= inspect @changeset %>
-      <%= inspect @submitted %>
-    </pre>
 
     <%= f = form_for @changeset, "#",
         phx_change: "validate",
@@ -41,14 +38,57 @@ defmodule MemzWeb.GameLive.Play do
     """
   end
 
-  def render(assigns) do
+  def render(%{eraser: %{status: :erasing}} = assigns) do
     ~L"""
     <h1>Memorize this much!</h1>
     <pre>
       <%= @eraser.text %>
     </pre>
     <button phx-click="erase">Erase some</button>
+
+    <%= score(@eraser) %>
     """
+  end
+
+  def render(%{eraser: %{status: :guessing}} = assigns) do
+    ~L"""
+    <h1>Type the text, filling in the blanks!</h1>
+    <pre>
+      <%= @eraser.text %>
+    </pre>
+
+    <%= f = form_for @guess_changeset, "#",
+        phx_submit: "guess", as: "guess" %>
+
+      <%= label f, :text %>
+      <%= text_input f, :text %>
+      <%= error_tag f, :text %>
+
+      <%= submit "Type the text" %>
+    </form>
+    """
+  end
+
+  def render(%{eraser: %{status: :finished}} = assigns) do
+    ~L"""
+    <h1>Nice job! See how you did.</h1>
+    <pre>
+      <%= score(@eraser) %>
+    </pre>
+    """
+  end
+
+  defp score(eraser) do
+    """
+    <h2>Your score is #{eraser.score} so far.</h2>
+    <h5>Lower scores are better</h5>
+    """
+    |> Phoenix.HTML.raw()
+  end
+
+  defp score(socket, guess) do
+    socket
+    |> assign(eraser: Game.score(socket.assigns.eraser, guess))
   end
 
   defp validate(socket, params) do
@@ -86,5 +126,10 @@ defmodule MemzWeb.GameLive.Play do
   @impl true
   def handle_event("erase", _params, socket) do
     {:noreply, erase(socket)}
+  end
+
+  @impl true
+  def handle_event("guess", %{"guess" => %{"text" => guess}}, socket) do
+    {:noreply, score(socket, guess)}
   end
 end
