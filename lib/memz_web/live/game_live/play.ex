@@ -1,7 +1,8 @@
 defmodule MemzWeb.GameLive.Play do
   use MemzWeb, :live_view
 
-  alias Memz.Game
+  alias Memz.{Game, BestScores}
+  alias Memz.BestScores.Score
 
   @default_text ""
   @default_steps 0
@@ -13,7 +14,8 @@ defmodule MemzWeb.GameLive.Play do
      |> assign(changeset: Game.change_game(default_game(), %{}))
      |> assign(guess_changeset: Game.game_changeset())
      |> assign(eraser: nil)
-     |> assign(submitted: false)}
+     |> assign(submitted: false)
+     |> assign(top_scores: nil)}
   end
 
   @impl true
@@ -73,6 +75,21 @@ defmodule MemzWeb.GameLive.Play do
     ~L"""
     <h1>Game Over!</h1>
     <h2>Your score: <%= @eraser.score %></h2>
+    <hr />
+    <h2>Enter your initials:</h2>
+    <%= f = form_for @score_changeset, "#",
+    phx_change: "validate_score",
+    phx_submit: "save_score" %>
+
+    <%= label f, :score %>
+    <%= number_input f, :score, disabled: true %>
+
+    <%= label f, :initials %>
+    <%= text_input f, :initials %>
+    <%= error_tag f, :initials %>
+
+    <%= submit "Save High Schore", disabled: !@score_changeset.valid? %>
+    </form>
     <button phx-click="play">Play again?</button>
     """
   end
@@ -112,11 +129,29 @@ defmodule MemzWeb.GameLive.Play do
     |> assign(eraser: Game.erase(socket.assigns.eraser))
   end
 
-  defp maybe_finish(%{assigns: %{eraser: %{status: :finished}}} = socket) do
-    push_patch(socket, to: "/game/over")
+  defp maybe_finish(%{assigns: %{eraser: %{status: :finished, score: score}}} = socket) do
+    socket
+    |> assign(score_changeset: BestScores.change_score(%Score{score: score}, %{}))
+    |> push_patch(to: "/game/over")
   end
 
   defp maybe_finish(socket), do: socket
+
+  defp validate_score(%{assigns: %{eraser: %{score: score}}} = socket, params) do
+    changeset =
+      %Score{score: score}
+      |> BestScores.change_score(params)
+      |> Map.put(:action, :validate)
+
+    socket
+    |> assign(score_changeset: changeset)
+  end
+
+  defp save_score(socket, params) do
+    BestScores.create_score(params)
+
+    assign(socket, top_scores: BestScores.top_scores())
+  end
 
   @impl true
   def handle_params(_params, _url, socket) do
@@ -141,5 +176,15 @@ defmodule MemzWeb.GameLive.Play do
   @impl true
   def handle_event("guess", %{"guess" => %{"text" => guess}}, socket) do
     {:noreply, socket |> score(guess) |> maybe_finish()}
+  end
+
+  @impl true
+  def handle_event("validate_score", %{"score" => params}, socket) do
+    {:noreply, validate_score(socket, params)}
+  end
+
+  @impl true
+  def handle_event("save_score", %{"score" => params}, socket) do
+    {:noreply, save_score(socket, params)}
   end
 end

@@ -3,7 +3,7 @@ defmodule Memz.BestScores.Score do
   import Ecto.Changeset
 
   schema "scores" do
-    field :initials, :string
+    field :initials, :string, null: false
     field :score, :integer
 
     timestamps()
@@ -14,5 +14,6 @@ defmodule Memz.BestScores.Score do
     score
     |> cast(attrs, [:initials, :score])
     |> validate_required([:initials, :score])
+    |> validate_length(:initials, min: 3, max: 3)
   end
 end
