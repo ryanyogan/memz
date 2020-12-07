@@ -69,12 +69,11 @@ defmodule MemzWeb.GameLive.Play do
     """
   end
 
-  def render(%{eraser: %{status: :finished}} = assigns) do
+  def render(%{live_action: :over} = assigns) do
     ~L"""
-    <h1>Nice job! See how you did.</h1>
-    <pre>
-      <%= score(@eraser) %>
-    </pre>
+    <h1>Game Over!</h1>
+    <h2>Your score: <%= @eraser.score %></h2>
+    <button phx-click="play">Play again?</button>
     """
   end
 
@@ -113,6 +112,17 @@ defmodule MemzWeb.GameLive.Play do
     |> assign(eraser: Game.erase(socket.assigns.eraser))
   end
 
+  defp maybe_finish(%{assigns: %{eraser: %{status: :finished}}} = socket) do
+    push_patch(socket, to: "/game/over")
+  end
+
+  defp maybe_finish(socket), do: socket
+
+  @impl true
+  def handle_params(_params, _url, socket) do
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_event("validate", %{"game" => params}, socket) do
     {:noreply, validate(socket, params)}
@@ -130,6 +140,6 @@ defmodule MemzWeb.GameLive.Play do
 
   @impl true
   def handle_event("guess", %{"guess" => %{"text" => guess}}, socket) do
-    {:noreply, score(socket, guess)}
+    {:noreply, socket |> score(guess) |> maybe_finish()}
   end
 end

@@ -19,6 +19,7 @@ defmodule MemzWeb.Router do
 
     live "/", PageLive, :index
     live "/game/play", GameLive.Play, :play
+    live "/game/over", GameLive.Play, :over
   end
 
   if Mix.env() in [:dev, :test] do
