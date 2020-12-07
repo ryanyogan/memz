@@ -71,25 +71,50 @@ defmodule MemzWeb.GameLive.Play do
     """
   end
 
-  def render(%{live_action: :over} = assigns) do
+  def render(%{top_scores: nil, live_action: :over} = assigns) do
     ~L"""
     <h1>Game Over!</h1>
     <h2>Your score: <%= @eraser.score %></h2>
     <hr />
     <h2>Enter your initials:</h2>
     <%= f = form_for @score_changeset, "#",
-    phx_change: "validate_score",
-    phx_submit: "save_score" %>
+      phx_change: "validate_score",
+      phx_submit: "save_score" %>
 
-    <%= label f, :score %>
-    <%= number_input f, :score, disabled: true %>
+      <%= label f, :score %>
+      <%= number_input f, :score, disabled: true %>
 
-    <%= label f, :initials %>
-    <%= text_input f, :initials %>
-    <%= error_tag f, :initials %>
+      <%= label f, :initials %>
+      <%= text_input f, :initials %>
+      <%= error_tag f, :initials %>
 
-    <%= submit "Save High Schore", disabled: !@score_changeset.valid? %>
+      <%= submit "Save High Schore", disabled: !@score_changeset.valid? %>
     </form>
+    <button phx-click="play">Play again?</button>
+    """
+  end
+
+  def render(%{live_action: :over} = assigns) do
+    ~L"""
+    <h1>Game Over!</h1>
+    <h2>Your score: <%= @eraser.score %></h2>
+    <hr />
+    <table>
+      <thead>
+        <tr>
+          <th>Score</th>
+          <th>Initials</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= for score <- @top_scores do %>
+          <tr>
+            <td><%= score.score %></td>
+            <td><%= score.initials %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
     <button phx-click="play">Play again?</button>
     """
   end
@@ -147,8 +172,11 @@ defmodule MemzWeb.GameLive.Play do
     |> assign(score_changeset: changeset)
   end
 
-  defp save_score(socket, params) do
-    BestScores.create_score(params)
+  defp save_score(
+         %{assigns: %{eraser: %{score: score}}} = socket,
+         %{"initials" => initials}
+       ) do
+    BestScores.create_score(initials, score)
 
     assign(socket, top_scores: BestScores.top_scores())
   end
